@@ -1,0 +1,7 @@
+/vendor
+/.idea
+/.vscode
+.env
+/uploads
+~$*.docx
+scripts/generate_report_docx.py

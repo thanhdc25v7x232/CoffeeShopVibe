@@ -1,0 +1,196 @@
+CÂY THƯ MỤC DỰ ÁN - Coffee Shop Vibe (CT275)
+
+D:.
+│   .env
+│   .gitignore
+│   bootstrap.php
+│   Caddyfile
+│   cay_thu_muc.txt
+│   composer.json
+│   composer.lock
+│   ct275_project.sql
+│   README.md
+│   seed_data.sql
+│   server.php
+│
+├───App
+│   │   functions.php
+│   │   SessionGuard.php
+│   │
+│   ├───Controllers
+│   │   │   AccountController.php
+│   │   │   AdminController.php
+│   │   │   CartController.php
+│   │   │   HomeController.php
+│   │   │   OrderController.php
+│   │   │   ProductController.php
+│   │   │   PromotionController.php
+│   │   │   StoreController.php
+│   │   │
+│   │   └───Auth
+│   │           AdminRegisterController.php
+│   │           LoginController.php
+│   │           RegisterController.php
+│   │
+│   ├───Core
+│   │       Controller.php
+│   │
+│   ├───Models
+│   │       Admin.php
+│   │       Customer.php
+│   │       Order.php
+│   │       PDOFactory.php
+│   │       Product.php
+│   │       Promotion.php
+│   │       Store.php
+│   │       User.php
+│   │
+│   └───Views
+│       ├───account
+│       │       orders.php
+│       │       show.php
+│       │
+│       ├───admin
+│       │       customer_detail.php
+│       │       customers.php
+│       │       index.php
+│       │       order_detail.php
+│       │       orders.php
+│       │       promotions.php
+│       │       statistics.php
+│       │
+│       ├───auth
+│       │       admin_login.php
+│       │       admin_register.php
+│       │       login.php
+│       │       register.php
+│       │
+│       ├───cart
+│       │       index.php
+│       │
+│       ├───errors
+│       │       404.php
+│       │
+│       ├───home
+│       │       about.php
+│       │       category.php
+│       │       contact.php
+│       │       index.php
+│       │       promotions.php
+│       │       search.php
+│       │
+│       ├───layouts
+│       │       admin_footer.php
+│       │       admin_header.php
+│       │       admin_master.php
+│       │       default.php
+│       │       footer.php
+│       │       header.php
+│       │       master.php
+│       │
+│       ├───orders
+│       │       checkout.php
+│       │       success.php
+│       │
+│       ├───products
+│       │       create.php
+│       │       index.php
+│       │       show.php
+│       │
+│       └───stores
+│               index.php
+│               locator.php
+│
+├───config
+│       image_map.php
+│
+├───public
+│   │   .gitkeep
+│   │   index.php
+│   │   test.php
+│   │
+│   ├───css
+│   │       style.css
+│   │
+│   ├───img
+│   │   │   unnamed.png
+│   │   │
+│   │   ├───baner
+│   │   │       baner.psd
+│   │   │       baner1.jpg
+│   │   │       baner2.jpg
+│   │   │       baner3.jpg
+│   │   │       Bestseller.jpg
+│   │   │       hd.jpg
+│   │   │       hd1.jpg
+│   │   │       hd1.psd
+│   │   │       hd2.jpg
+│   │   │       hd5.jpg
+│   │   │       Untitled.jpg
+│   │   │       Untitledx.jpg
+│   │   │
+│   │   ├───banh
+│   │   │       banh chuoi hat.png
+│   │   │       banh-chuoi.png
+│   │   │       banh-flan.png
+│   │   │       banh-sung-bo.png
+│   │   │       croissant.png
+│   │   │       croissant1.png
+│   │   │       panna-cotta.png
+│   │   │       tiramisu-mini.png
+│   │   │
+│   │   ├───ca phe
+│   │   │       Cà Phê Cappuccino.jpg
+│   │   │       Cà Phê Đen Đá.jpg
+│   │   │       Cà Phê Kem Muối.jpg
+│   │   │       Cà Phê Latte.jpg
+│   │   │       Cà Phê Sữa Đá.jpg
+│   │   │       Cà Phê Sữa Kem Silk.jpg
+│   │   │
+│   │   ├───logo
+│   │   │       Logo.png
+│   │   │       Logo2.jpg
+│   │   │       Logo2x.png
+│   │   │
+│   │   ├───tra sua
+│   │   │       Hồng Trà Sữa.jpg
+│   │   │       Trà Sữa.jpg
+│   │   │       Trà Sữa Bá Tước.jpg
+│   │   │       Trà Sữa Lài.jpg
+│   │   │       Trà Sữa Matcha.jpg
+│   │   │       Trà Sữa Nhãn Sen.jpg
+│   │   │       Trà Sữa Ô Long.jpg
+│   │   │       Trà Sữa Ô Long Lài.jpg
+│   │   │       Trà Sữa Ô Long Quế Hoa.jpg
+│   │   │       Trà Sữa Socola.jpg
+│   │   │
+│   │   └───tra trai cay
+│   │           Trà Cam Quế.jpg
+│   │           Trà Chanh Dây.jpg
+│   │           Trà Dâu Tằm.jpg
+│   │           Trà Đào.jpg
+│   │           Trà Ổi Hồng.jpg
+│   │           Trà Tắc Xí Muội.jpg
+│   │           Trà Thơm.jpg
+│   │           Trà Vải.jpg
+│   │           Trà Xoài.jpg
+│   │
+│   └───uploads
+│           (ảnh sản phẩm do admin upload lúc chạy - đặt tên ngẫu nhiên, không commit lên git)
+│
+├───routes
+│       web.php
+│
+├───scripts
+│       generate_image_map.php
+│
+└───vendor                       (thư viện bên thứ 3, do Composer tự quản lý - xem composer.json)
+    ├───bramus/router
+    ├───composer
+    ├───graham-campbell/result-type
+    ├───league/plates
+    ├───phpoption/phpoption
+    ├───symfony/polyfill-ctype
+    ├───symfony/polyfill-mbstring
+    ├───symfony/polyfill-php80
+    └───vlucas/phpdotenv

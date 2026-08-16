@@ -1,0 +1,23 @@
+# Caddyfile dùng để demo HTTPS/HTTP2 cục bộ.
+#
+# Chạy song song 2 tiến trình:
+#   1) php -S localhost:8000 -t public        (server PHP built-in, HTTP thuần)
+#   2) caddy run                              (đọc file này, đứng trước làm reverse proxy)
+#
+# Sau đó truy cập https://localhost:8443 — Caddy tự cấp chứng chỉ TLS nội bộ (tls internal)
+# và phục vụ qua HTTP/2, che luôn cổng 8000 phía sau.
+#
+# Lần đầu chạy, Caddy sẽ hỏi cài đặt root CA cục bộ vào trình duyệt/hệ điều hành để
+# https://localhost:8443 không bị cảnh báo "not secure".
+
+localhost:8443 {
+	tls internal
+
+	encode gzip zstd
+
+	# Cache dài hạn cho ảnh/css/js tĩnh trong public/
+	@static path /css/* /img/* /uploads/* /js/*
+	header @static Cache-Control "public, max-age=604800, immutable"
+
+	reverse_proxy localhost:8000
+}
