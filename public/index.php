@@ -17,6 +17,14 @@ error_reporting(E_ALL);
 
 define('APPNAME', 'Vibe Coffee Shop');
 
+// Khu vực admin dùng RIÊNG 1 tên cookie session (khác với khách hàng). Nếu dùng chung
+// PHPSESSID, đăng nhập admin ở 1 tab sẽ ghi đè cookie của tab khách hàng đang mở cùng
+// trình duyệt (cookie thuộc về domain, không thuộc về tab) -> tab khách hàng đột nhiên
+// mất đăng nhập dù không làm gì cả. Tách riêng để 2 vai trò độc lập hoàn toàn.
+if (str_starts_with($_SERVER['REQUEST_URI'] ?? '/', '/admin')) {
+    session_name('ADMIN_SESSID');
+}
+
 session_start();
 
 // Khởi tạo router

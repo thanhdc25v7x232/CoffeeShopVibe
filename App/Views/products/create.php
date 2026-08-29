@@ -57,6 +57,11 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label">Tồn kho</label>
+                            <input type="number" class="form-control" id="stock" name="stock" value="0" min="0">
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">Mô tả</label>
                             <textarea class="form-control" id="description" name="description" rows="2"></textarea>
                         </div>
@@ -103,6 +108,7 @@
                                 <th>Tên món</th>
                                 <th>Loại</th>
                                 <th>Giá</th>
+                                <th>Tồn kho</th>
                                 <th width="160">Hành động</th>
                             </tr>
                         </thead>
@@ -117,6 +123,11 @@
                                 </td>
                                 <td><?= htmlspecialchars($p['l_ten'] ?? 'Chưa phân loại') ?></td>
                                 <td class="text-danger"><?= number_format($p['sp_gia']) ?>đ</td>
+                                <td>
+                                    <span class="badge <?= (int)($p['sp_tonkho'] ?? 0) <= 10 ? 'bg-danger' : 'bg-success' ?>">
+                                        <?= (int)($p['sp_tonkho'] ?? 0) ?>
+                                    </span>
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-warning" 
                                             onclick='fillForm(<?= json_encode($p) ?>)'>
@@ -174,6 +185,7 @@
         document.getElementById('product_id').value = product.sp_ma;
         document.getElementById('name').value = product.sp_ten;
         document.getElementById('price').value = product.sp_gia;
+        document.getElementById('stock').value = product.sp_tonkho ?? 0;
         document.getElementById('description').value = product.sp_mota;
         document.getElementById('category_id').value = product.l_ma;
         document.getElementById('promotion_id').value = product.km_ma ?? '';

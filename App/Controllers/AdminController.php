@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\PDOFactory;
 
 class AdminController extends Controller
@@ -12,6 +13,7 @@ class AdminController extends Controller
     protected $pdo;
     protected $orderModel;
     protected $customerModel;
+    protected $productModel;
 
     public function __construct()
     {
@@ -32,6 +34,7 @@ class AdminController extends Controller
         $this->pdo = (new PDOFactory())->create($config);
         $this->orderModel = new Order($this->pdo);
         $this->customerModel = new Customer($this->pdo);
+        $this->productModel = new Product($this->pdo);
 
         $this->setLayout('layouts/admin_master');
     }
@@ -210,5 +213,37 @@ class AdminController extends Controller
             'customer' => $customer,
             'orders' => $this->orderModel->findByCustomer((int)$customerId),
         ]);
+    }
+
+    /**
+     * Báo cáo tồn kho: toàn bộ sản phẩm, sản phẩm tồn kho thấp lên trước.
+     */
+    public function inventory()
+    {
+        $this->view('admin/inventory', [
+            'title' => 'Tồn kho sản phẩm - ' . APPNAME,
+            'products' => $this->productModel->getInventoryReport(),
+            'messages' => session_get_once('messages'),
+        ]);
+    }
+
+    /**
+     * Cập nhật nhanh số lượng tồn kho của một sản phẩm.
+     */
+    public function updateStock()
+    {
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $productId = (int)($_POST['product_id'] ?? 0);
+        $stock = $_POST['stock'] ?? null;
+
+        if ($productId <= 0 || $stock === null || !is_numeric($stock) || $stock < 0) {
+            redirect('/admin/inventory', ['errors' => ['Số lượng tồn kho không hợp lệ.']]);
+        }
+
+        $this->productModel->updateStock($productId, (int)$stock);
+        redirect('/admin/inventory', ['messages' => ['success' => 'Đã cập nhật tồn kho.']]);
     }
 }

@@ -28,8 +28,11 @@
                         <div class="row mt-3">
                             <?php foreach ($promotion['products'] as $product): ?>
                                 <div class="col-6 col-md-3 mb-3">
-                                    <a href="/san-pham/<?= $product['sp_ma'] ?>" class="text-decoration-none text-dark">
+                                    <a href="/san-pham/<?= $product['sp_ma'] ?>" class="text-decoration-none text-dark position-relative d-block">
                                         <div class="card h-100">
+                                            <button type="button" class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-1 favorite-btn" data-product-id="<?= $product['sp_ma'] ?>" title="Yêu thích" style="z-index: 2;">
+                                                <i class="fa-regular fa-heart"></i>
+                                            </button>
                                             <img src="<?= product_image_url($product) ?>" class="card-img-top"
                                                  style="height: 140px; object-fit: cover;" onerror="this.onerror=null;this.src='/img/unnamed.png';">
                                             <div class="card-body p-2">

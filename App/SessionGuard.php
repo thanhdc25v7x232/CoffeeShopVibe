@@ -17,6 +17,11 @@ class SessionGuard
         if ($verified) {
             // Cấp session ID mới sau khi xác thực để chống session fixation
             session_regenerate_id(true);
+            // Một session chỉ đại diện cho MỘT vai trò tại một thời điểm: đăng nhập khách hàng
+            // phải xóa phiên admin cũ (nếu có) trong cùng trình duyệt, tránh nhầm lẫn ở những nơi
+            // phân biệt vai trò theo session như WebSocket chat (App\WebSocket\ChatServer).
+            unset($_SESSION['admin_id']);
+            $this->admin = null;
             $_SESSION['customer_id'] = $customer->kh_ma;
         }
         return $verified;
@@ -28,6 +33,9 @@ class SessionGuard
         if ($verified) {
             // Cấp session ID mới sau khi xác thực để chống session fixation
             session_regenerate_id(true);
+            // Tương tự login(): xóa phiên khách hàng cũ (nếu có) để không lẫn 2 vai trò.
+            unset($_SESSION['customer_id']);
+            $this->customer = null;
             $_SESSION['admin_id'] = $admin->qtv_ma;
         }
         return $verified;

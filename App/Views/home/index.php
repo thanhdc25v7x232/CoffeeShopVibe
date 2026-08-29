@@ -63,6 +63,9 @@ function renderProductRow($title, $products, $rowId, $categoryName = '') {
                                 <?php if (!empty($product['km_phantram'])): ?>
                                     <span class="badge bg-danger position-absolute top-0 end-0 m-2">-<?= $product['km_phantram'] ?>%</span>
                                 <?php endif; ?>
+                                <button type="button" class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-2 favorite-btn" data-product-id="<?= $product['sp_ma'] ?>" title="Yêu thích">
+                                    <i class="fa-regular fa-heart"></i>
+                                </button>
                                 <img src="<?= product_image_url($product, $categoryName ?: ($product['l_ten'] ?? '')) ?>"
                                      class="card-img-top"
                                      alt="<?= htmlspecialchars($product['sp_ten']) ?>"
@@ -231,6 +234,9 @@ function renderProductRow($title, $products, $rowId, $categoryName = '') {
             <div class="card h-100 shadow-sm">
                 <a href="/san-pham/${product.sp_ma}" class="text-decoration-none text-dark position-relative">
                     ${discountBadge}
+                    <button type="button" class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-2 favorite-btn" data-product-id="${product.sp_ma}" title="Yêu thích">
+                        <i class="fa-regular fa-heart"></i>
+                    </button>
                     <img src="${product.image_url || '/img/unnamed.png'}"
                          class="card-img-top product-thumb"
                          style="height: 200px; object-fit: cover;" onerror="this.onerror=null;this.src='/img/unnamed.png';">

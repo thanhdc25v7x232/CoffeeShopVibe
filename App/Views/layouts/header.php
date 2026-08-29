@@ -38,6 +38,10 @@ try {
                 <i class="fa-solid fa-motorcycle"></i>
                 <span class="d-none d-lg-inline">Phương thức nhận hàng</span>
             </button>
+            <a href="/favorites" class="btn btn-light btn-sm" title="Sản phẩm yêu thích">
+                <i class="fa-solid fa-heart text-danger"></i>
+                <span class="d-none d-lg-inline">Yêu thích</span>
+            </a>
             <a href="/cart" class="btn btn-success position-relative btn-sm" title="Giỏ hàng">
                 <i class="fa-solid fa-cart-shopping"></i> <span class="d-none d-sm-inline">Giỏ hàng</span>
                 <?php
@@ -156,5 +160,65 @@ try {
     }
     // Tự cập nhật số lượng giỏ hàng định kỳ, không cần tải lại trang (F5)
     setInterval(refreshCartBadge, 8000);
+})();
+</script>
+
+<script>
+(function () {
+    // Bắt sự kiện click trên bất kỳ nút yêu thích nào (card sản phẩm, trang chi tiết, trang yêu thích...)
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('.favorite-btn');
+        if (!button) return;
+
+        event.preventDefault();
+        if (button.disabled) return;
+
+        // Đọc CSRF_TOKEN lúc click (khai báo ở cuối layout, sau khi header.php đã được include)
+        var csrfToken = typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '';
+        var productId = button.getAttribute('data-product-id');
+        button.disabled = true;
+
+        var body = new URLSearchParams();
+        body.set('_csrf', csrfToken);
+        body.set('product_id', productId);
+
+        fetch('/favorites/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body.toString()
+        })
+        .then(function (res) {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            return res.json();
+        })
+        .then(function (data) {
+            if (!data) return;
+            if (!data.success) {
+                alert(data.message || 'Không thể cập nhật yêu thích.');
+                return;
+            }
+            var icon = button.querySelector('i') || button;
+            if (data.favorited) {
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid', 'text-danger');
+            } else {
+                icon.classList.remove('fa-solid', 'text-danger');
+                icon.classList.add('fa-regular');
+            }
+            button.setAttribute('data-favorited', data.favorited ? '1' : '0');
+        })
+        .catch(function () {
+            alert('Có lỗi xảy ra, vui lòng thử lại.');
+        })
+        .finally(function () {
+            button.disabled = false;
+        });
+    });
 })();
 </script>

@@ -5,12 +5,16 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\Product;
 use App\Models\Promotion;
+use App\Models\Favorite;
+use App\Models\Review;
 use App\Models\PDOFactory;
 
 class ProductController extends Controller
 {
     protected $productModel;
     protected $promotionModel;
+    protected $favoriteModel;
+    protected $reviewModel;
     private const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     private const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     private const MAX_IMAGE_SIZE = 2097152; // 2MB
@@ -28,6 +32,8 @@ class ProductController extends Controller
         $pdo = (new PDOFactory())->create($config);
         $this->productModel = new Product($pdo);
         $this->promotionModel = new Promotion($pdo);
+        $this->favoriteModel = new Favorite($pdo);
+        $this->reviewModel = new Review($pdo);
         $this->setLayout('layouts/admin_master');
     }
 
@@ -86,10 +92,22 @@ class ProductController extends Controller
             ? $this->productModel->getRelatedProducts($product['l_ma'], $product['sp_ma'])
             : [];
 
+        $isFavorited = false;
+        $myReview = null;
+        if (AUTHGUARD()->isCustomerLoggedIn()) {
+            $customer = AUTHGUARD()->customer();
+            $isFavorited = $this->favoriteModel->isFavorited($customer->kh_ma, $product['sp_ma']);
+            $myReview = $this->reviewModel->findByCustomerAndProduct($customer->kh_ma, $product['sp_ma']);
+        }
+
         $this->view('products/show', [
             'title' => $product['sp_ten'] . ' - ' . APPNAME,
             'product' => $product,
-            'relatedProducts' => $relatedProducts
+            'relatedProducts' => $relatedProducts,
+            'isFavorited' => $isFavorited,
+            'reviewStats' => $this->reviewModel->getStatsForProduct($product['sp_ma']),
+            'reviews' => $this->reviewModel->getApprovedByProduct($product['sp_ma']),
+            'myReview' => $myReview,
         ]);
     }
 
@@ -166,6 +184,7 @@ class ProductController extends Controller
             }
 
             $promotion_id = isset($_POST['promotion_id']) && $_POST['promotion_id'] !== '' ? (int)$_POST['promotion_id'] : null;
+            $stock = isset($_POST['stock']) && $_POST['stock'] !== '' ? max(0, (int)$_POST['stock']) : 0;
 
             $data = [
                 'id' => $productId, // Lấy ID từ hidden field
@@ -174,6 +193,7 @@ class ProductController extends Controller
                 'description' => $_POST['description'],
                 'category_id' => $category_id,
                 'promotion_id' => $promotion_id,
+                'stock' => $stock,
                 'image' => $imageName // Nếu null, model sẽ bỏ qua cập nhật ảnh
             ];
 
@@ -264,6 +284,7 @@ class ProductController extends Controller
             }
 
             $promotion_id = isset($_POST['promotion_id']) && $_POST['promotion_id'] !== '' ? (int)$_POST['promotion_id'] : null;
+            $stock = isset($_POST['stock']) && $_POST['stock'] !== '' ? max(0, (int)$_POST['stock']) : 0;
 
             $data = [
                 'name'        => $name,
@@ -271,7 +292,8 @@ class ProductController extends Controller
                 'description' => $_POST['description'],
                 'image'       => $imageName,
                 'category_id' => $category_id,
-                'promotion_id' => $promotion_id
+                'promotion_id' => $promotion_id,
+                'stock'       => $stock
             ];
 
             // Gọi Model để lưu

@@ -19,5 +19,27 @@ localhost:8443 {
 	@static path /css/* /img/* /uploads/* /js/*
 	header @static Cache-Control "public, max-age=604800, immutable"
 
+	# Chat WebSocket: proxy /ws sang daemon websocket_server.php (cổng 8081).
+	# Bắt buộc đứng TRƯỚC reverse_proxy chung bên dưới. Caddy tự xử lý WebSocket upgrade.
+	reverse_proxy /ws localhost:8081
+
+	reverse_proxy localhost:8000
+}
+
+# Cong HTTP thuan (khong TLS), cung cau hinh voi khoi tren, danh rieng cho
+# `cloudflared tunnel --url http://localhost:8444` khi dung Cach 3 o README.
+# Ly do co khoi rieng nay: tren Windows, `cloudflared --no-tls-verify` doi khi
+# khong bo qua duoc xac thuc chung chi tu ky cua Caddy (cloudflared tu bao
+# "does not support loading the system root certificate pool on Windows"),
+# khien tunnel tra ve 200 nhung body rong. Tro thang vao cong HTTP nay tranh
+# hoan toan van de TLS do, trong khi van giu duoc route /ws proxy real-time.
+:8444 {
+	encode gzip zstd
+
+	@static path /css/* /img/* /uploads/* /js/*
+	header @static Cache-Control "public, max-age=604800, immutable"
+
+	reverse_proxy /ws localhost:8081
+
 	reverse_proxy localhost:8000
 }

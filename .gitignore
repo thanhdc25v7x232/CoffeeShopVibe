@@ -5,3 +5,4 @@
 /uploads
 ~$*.docx
 scripts/generate_report_docx.py
+*.log

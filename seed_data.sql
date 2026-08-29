@@ -112,3 +112,37 @@ BEGIN
         LIMIT 1;
     END IF;
 END$$;
+
+DO $$
+BEGIN
+    -- Tồn kho mẫu, có vài sản phẩm thấp để demo báo cáo tồn kho
+    UPDATE SAN_PHAM SET SP_TONKHO = 40 WHERE SP_TEN = 'Bánh Chuối';
+    UPDATE SAN_PHAM SET SP_TONKHO = 8 WHERE SP_TEN = 'Trà Sữa Truyền Thống';
+    UPDATE SAN_PHAM SET SP_TONKHO = 60 WHERE SP_TEN = 'Cà Phê Đen';
+    UPDATE SAN_PHAM SET SP_TONKHO = 3 WHERE SP_TEN = 'Trà Cam';
+
+    -- Đánh giá mẫu đã duyệt để trang chi tiết sản phẩm/admin không trống khi demo
+    IF NOT EXISTS (
+        SELECT 1 FROM DANH_GIA dg
+        JOIN KHACH_HANG kh ON dg.KH_MA = kh.KH_MA
+        JOIN SAN_PHAM sp ON dg.SP_MA = sp.SP_MA
+        WHERE kh.KH_EMAIL = 'a@example.com' AND sp.SP_TEN = 'Bánh Chuối'
+    ) THEN
+        INSERT INTO DANH_GIA (KH_MA, SP_MA, DG_SAO, DG_NOIDUNG, DG_TRANGTHAI)
+        SELECT kh.KH_MA, sp.SP_MA, 5, 'Bánh thơm, mềm, rất ngon!', 'approved'
+        FROM KHACH_HANG kh, SAN_PHAM sp
+        WHERE kh.KH_EMAIL = 'a@example.com' AND sp.SP_TEN = 'Bánh Chuối';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM DANH_GIA dg
+        JOIN KHACH_HANG kh ON dg.KH_MA = kh.KH_MA
+        JOIN SAN_PHAM sp ON dg.SP_MA = sp.SP_MA
+        WHERE kh.KH_EMAIL = 'b@example.com' AND sp.SP_TEN = 'Trà Sữa Truyền Thống'
+    ) THEN
+        INSERT INTO DANH_GIA (KH_MA, SP_MA, DG_SAO, DG_NOIDUNG, DG_TRANGTHAI)
+        SELECT kh.KH_MA, sp.SP_MA, 4, 'Vị vừa uống, sẽ ủng hộ tiếp.', 'approved'
+        FROM KHACH_HANG kh, SAN_PHAM sp
+        WHERE kh.KH_EMAIL = 'b@example.com' AND sp.SP_TEN = 'Trà Sữa Truyền Thống';
+    END IF;
+END$$;

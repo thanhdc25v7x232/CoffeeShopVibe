@@ -42,6 +42,9 @@
                     <li class="nav-item"><a href="/admin/promotions" class="btn btn-success m-1">QUẢN LÝ KHUYẾN MÃI</a></li>
                     <li class="nav-item"><a href="/admin/orders" class="btn btn-success m-1">QUẢN LÝ ĐƠN HÀNG</a></li>
                     <li class="nav-item"><a href="/admin/customers" class="btn btn-success m-1">QUẢN LÝ KHÁCH HÀNG</a></li>
+                    <li class="nav-item"><a href="/admin/reviews" class="btn btn-success m-1">QUẢN LÝ ĐÁNH GIÁ</a></li>
+                    <li class="nav-item"><a href="/admin/inventory" class="btn btn-success m-1">TỒN KHO</a></li>
+                    <li class="nav-item"><a href="/admin/chat" class="btn btn-success m-1">CHAT</a></li>
                     <li class="nav-item"><a href="/admin/statistics" class="btn btn-success m-1">THỐNG KÊ ĐƠN VÀ DOANH THU</a></li>
                 </ul>
             </div>

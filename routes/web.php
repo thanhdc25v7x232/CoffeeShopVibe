@@ -94,3 +94,28 @@ $router->post('/admin/promotions/delete', '\App\Controllers\PromotionController@
 
 // Khuyến mãi (trang công khai)
 $router->get('/khuyen-mai', '\App\Controllers\HomeController@promotions');
+
+// Yêu thích
+$router->get('/favorites', '\App\Controllers\FavoriteController@index');
+$router->post('/favorites/toggle', '\App\Controllers\FavoriteController@toggle');
+
+// Đánh giá sản phẩm
+$router->post('/san-pham/{id}/danh-gia', '\App\Controllers\ReviewController@store');
+
+// Chat (khách hàng)
+$router->get('/chat/messages', '\App\Controllers\ChatController@messages');
+$router->post('/chat/send', '\App\Controllers\ChatController@send');
+
+// Admin: quản lý đánh giá
+$router->get('/admin/reviews', '\App\Controllers\AdminReviewController@index');
+$router->post('/admin/reviews/update-status', '\App\Controllers\AdminReviewController@updateStatus');
+$router->post('/admin/reviews/delete', '\App\Controllers\AdminReviewController@delete');
+
+// Admin: báo cáo & cập nhật tồn kho
+$router->get('/admin/inventory', '\App\Controllers\AdminController@inventory');
+$router->post('/admin/inventory/update-stock', '\App\Controllers\AdminController@updateStock');
+
+// Admin: quản lý chat
+$router->get('/admin/chat', '\App\Controllers\AdminChatController@index');
+$router->get('/admin/chat/conversation', '\App\Controllers\AdminChatController@conversation');
+$router->post('/admin/chat/send', '\App\Controllers\AdminChatController@send');

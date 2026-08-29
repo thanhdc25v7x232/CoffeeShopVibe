@@ -158,9 +158,39 @@ class Order
         ];
     }
 
-    // Cập nhật trạng thái đơn hàng
+    // Cập nhật trạng thái đơn hàng.
+    // Khi chuyển sang "completed" lần đầu, trừ luôn tồn kho các sản phẩm trong đơn (trong cùng transaction).
     public function updateStatus(int $id, string $status): bool
     {
+        $current = $this->findById($id);
+        if (!$current) {
+            return false;
+        }
+
+        if ($status === 'completed' && $current['dh_trangthai'] !== 'completed') {
+            $this->pdo->beginTransaction();
+            try {
+                $stmt = $this->pdo->prepare("UPDATE DON_HANG SET DH_TRANGTHAI = :status WHERE DH_MA = :id");
+                $stmt->execute(['status' => $status, 'id' => $id]);
+
+                $items = $this->pdo->prepare("SELECT SP_MA, CTDH_SOLUONG FROM CHI_TIET_DON_HANG WHERE DH_MA = :id");
+                $items->execute(['id' => $id]);
+
+                $deduct = $this->pdo->prepare("
+                    UPDATE SAN_PHAM SET SP_TONKHO = GREATEST(SP_TONKHO - :qty, 0) WHERE SP_MA = :sp_ma
+                ");
+                foreach ($items->fetchAll() as $item) {
+                    $deduct->execute(['qty' => $item['ctdh_soluong'], 'sp_ma' => $item['sp_ma']]);
+                }
+
+                $this->pdo->commit();
+                return true;
+            } catch (Throwable $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
+
         $stmt = $this->pdo->prepare("UPDATE DON_HANG SET DH_TRANGTHAI = :status WHERE DH_MA = :id");
         $stmt->bindValue(':status', $status);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);

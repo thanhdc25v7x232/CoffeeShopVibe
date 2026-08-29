@@ -43,8 +43,8 @@ class Product
     public function addProduct($data)
     {
         // Câu lệnh SQL chèn dữ liệu, bao gồm cả khóa ngoại L_MA, KM_MA
-        $sql = "INSERT INTO SAN_PHAM (SP_TEN, SP_GIA, SP_MOTA, SP_HINH, L_MA, KM_MA)
-                VALUES (:ten, :gia, :mota, :hinh, :loai, :khuyenmai)";
+        $sql = "INSERT INTO SAN_PHAM (SP_TEN, SP_GIA, SP_MOTA, SP_HINH, L_MA, KM_MA, SP_TONKHO)
+                VALUES (:ten, :gia, :mota, :hinh, :loai, :khuyenmai, :tonkho)";
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -53,6 +53,7 @@ class Product
         $stmt->bindValue(':gia', $data['price']);
         $stmt->bindValue(':mota', $data['description']);
         $stmt->bindValue(':hinh', $data['image']);
+        $stmt->bindValue(':tonkho', $data['stock'] ?? 0, PDO::PARAM_INT);
 
         // Xử lý logic: Nếu người dùng không chọn loại (hoặc rỗng) thì lưu là NULL
         // Lưu ý: Trong Controller ta dùng key là 'category_id'
@@ -131,10 +132,10 @@ class Product
     {
         // Nếu có ảnh mới thì cập nhật cả ảnh, không thì giữ nguyên
         if (!empty($data['image'])) {
-            $sql = "UPDATE SAN_PHAM SET SP_TEN=:ten, SP_GIA=:gia, SP_MOTA=:mota, SP_HINH=:hinh, L_MA=:loai, KM_MA=:khuyenmai, SP_NGAYCAPNHAT=CURRENT_TIMESTAMP
+            $sql = "UPDATE SAN_PHAM SET SP_TEN=:ten, SP_GIA=:gia, SP_MOTA=:mota, SP_HINH=:hinh, L_MA=:loai, KM_MA=:khuyenmai, SP_TONKHO=:tonkho, SP_NGAYCAPNHAT=CURRENT_TIMESTAMP
                 WHERE SP_MA=:id";
         } else {
-            $sql = "UPDATE SAN_PHAM SET SP_TEN=:ten, SP_GIA=:gia, SP_MOTA=:mota, L_MA=:loai, KM_MA=:khuyenmai, SP_NGAYCAPNHAT=CURRENT_TIMESTAMP
+            $sql = "UPDATE SAN_PHAM SET SP_TEN=:ten, SP_GIA=:gia, SP_MOTA=:mota, L_MA=:loai, KM_MA=:khuyenmai, SP_TONKHO=:tonkho, SP_NGAYCAPNHAT=CURRENT_TIMESTAMP
                 WHERE SP_MA=:id";
         }
 
@@ -144,6 +145,7 @@ class Product
         $stmt->bindValue(':mota', $data['description']);
         $stmt->bindValue(':loai', $data['category_id']);
         $stmt->bindValue(':khuyenmai', !empty($data['promotion_id']) ? $data['promotion_id'] : null);
+        $stmt->bindValue(':tonkho', $data['stock'] ?? 0, PDO::PARAM_INT);
         $stmt->bindValue(':id', $data['id']);
 
         if (!empty($data['image'])) {
@@ -180,7 +182,7 @@ class Product
     public function getProductById($id)
     {
         $stmt = $this->pdo->prepare("
-            SELECT p.SP_MA, p.SP_TEN, p.SP_GIA, p.SP_HINH, p.SP_MOTA, p.L_MA, p.KM_MA, p.SP_NGAYCAPNHAT, km.KM_PHANTRAM
+            SELECT p.SP_MA, p.SP_TEN, p.SP_GIA, p.SP_HINH, p.SP_MOTA, p.L_MA, p.KM_MA, p.SP_NGAYCAPNHAT, p.SP_TONKHO, km.KM_PHANTRAM
             FROM SAN_PHAM p
             " . self::ACTIVE_PROMOTION_JOIN . "
             WHERE p.SP_MA = :id
@@ -315,5 +317,34 @@ class Product
         ");
         $row = $stmt->fetch();
         return md5(implode('|', $row));
+    }
+
+    // Cập nhật nhanh tồn kho một sản phẩm (dùng ở trang báo cáo tồn kho admin)
+    public function updateStock($id, $soLuong)
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE SAN_PHAM SET SP_TONKHO = :tonkho, SP_NGAYCAPNHAT = CURRENT_TIMESTAMP WHERE SP_MA = :id
+        ");
+        $stmt->bindValue(':tonkho', max(0, (int)$soLuong), PDO::PARAM_INT);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Báo cáo tồn kho cho admin: toàn bộ sản phẩm, tồn kho thấp lên trước
+    public function getInventoryReport(int $lowStockThreshold = 10): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT p.SP_MA, p.SP_TEN, p.SP_HINH, p.SP_TONKHO, l.L_TEN
+            FROM SAN_PHAM p
+            LEFT JOIN LOAI_SAN_PHAM l ON p.L_MA = l.L_MA
+            ORDER BY p.SP_TONKHO ASC, p.SP_TEN ASC
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return array_map(function (array $row) use ($lowStockThreshold) {
+            $row['low_stock'] = (int)$row['sp_tonkho'] <= $lowStockThreshold;
+            return $row;
+        }, $rows);
     }
 }
