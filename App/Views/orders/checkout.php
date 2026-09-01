@@ -103,6 +103,29 @@
                                     </div>
                                 </div>
 
+                                <?php $paymentMethod = $old['payment_method'] ?? 'cod'; ?>
+                                <div class="mb-3">
+                                    <label class="form-label d-block">Phương thức thanh toán <span class="text-danger">*</span></label>
+                                    <?php foreach ($paymentMethods as $key => $label): ?>
+                                        <?php $available = \App\Services\Payments\PaymentGatewayFactory::make($key)->isAvailable(); ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method"
+                                                   id="payment-<?= htmlspecialchars($key) ?>" value="<?= htmlspecialchars($key) ?>"
+                                                   <?= $paymentMethod === $key ? 'checked' : '' ?>
+                                                   <?= $available ? '' : 'disabled' ?>>
+                                            <label class="form-check-label" for="payment-<?= htmlspecialchars($key) ?>">
+                                                <?= htmlspecialchars($label) ?>
+                                                <?php if (!$available): ?>
+                                                    <span class="badge bg-secondary ms-1">Sắp ra mắt</span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if (isset($errors['payment_method'])): ?>
+                                        <div class="text-danger small mt-1"><?= htmlspecialchars($errors['payment_method']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+
                                 <div class="d-grid mt-4">
                                     <button type="submit" class="btn btn-success btn-lg">
                                         <i class="fa-solid fa-check me-2"></i>
@@ -127,9 +150,20 @@
                                 </li>
                             <?php endforeach; ?>
                         </ul>
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Tổng cộng:</h5>
-                            <h4 class="text-danger fw-bold mb-0"><?= number_format($total, 0, ',', '.') ?> VNĐ</h4>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tạm tính:</span>
+                                <span><?= number_format($total, 0, ',', '.') ?> VNĐ</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2" id="delivery-fee-row" style="<?= $deliveryFee > 0 ? '' : 'display:none;' ?>">
+                                <span>Phí giao hàng:</span>
+                                <span id="delivery-fee-value"><?= number_format($deliveryFee, 0, ',', '.') ?> VNĐ</span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Tổng cộng:</h5>
+                                <h4 class="text-danger fw-bold mb-0" id="grand-total"><?= number_format($total, 0, ',', '.') ?> VNĐ</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -139,10 +173,21 @@
 </div>
 
 <script>
+const SUBTOTAL = <?= (int)$total ?>;
+const DELIVERY_FEE = <?= (int)$deliveryFee ?>;
+
+function formatVnd(amount) {
+    return amount.toLocaleString('vi-VN') + ' VNĐ';
+}
+
 function toggleMethod() {
     const isPickup = document.getElementById('method-pickup').checked;
     document.getElementById('pickup-fields').style.display = isPickup ? 'block' : 'none';
     document.getElementById('delivery-fields').style.display = isPickup ? 'none' : 'block';
+
+    document.getElementById('delivery-fee-row').style.display = (!isPickup && DELIVERY_FEE > 0) ? '' : 'none';
+    const total = isPickup ? SUBTOTAL : SUBTOTAL + DELIVERY_FEE;
+    document.getElementById('grand-total').textContent = formatVnd(total);
 }
 document.addEventListener('DOMContentLoaded', toggleMethod);
 </script>

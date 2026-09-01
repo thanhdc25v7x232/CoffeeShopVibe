@@ -20,8 +20,8 @@ class Order
         $this->pdo->beginTransaction();
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO DON_HANG (KH_MA, DH_TENKH, DH_SDT, DH_DIACHI, DH_HTNHAN, CH_MA, DH_TONGTIEN, DH_TRANGTHAI)
-                VALUES (:kh_ma, :tenkh, :sdt, :diachi, :htnhan, :ch_ma, :tongtien, 'pending')
+                INSERT INTO DON_HANG (KH_MA, DH_TENKH, DH_SDT, DH_DIACHI, DH_HTNHAN, CH_MA, DH_TONGTIEN, DH_TRANGTHAI, DH_PTTT, DH_TT_TRANGTHAI)
+                VALUES (:kh_ma, :tenkh, :sdt, :diachi, :htnhan, :ch_ma, :tongtien, 'pending', :pttt, 'unpaid')
                 RETURNING DH_MA
             ");
             $stmt->execute([
@@ -32,6 +32,7 @@ class Order
                 'htnhan' => $data['method'],
                 'ch_ma' => $data['store_id'],
                 'tongtien' => $data['total'],
+                'pttt' => $data['payment_method'],
             ]);
             $orderId = (int)$stmt->fetchColumn();
 
@@ -193,6 +194,26 @@ class Order
 
         $stmt = $this->pdo->prepare("UPDATE DON_HANG SET DH_TRANGTHAI = :status WHERE DH_MA = :id");
         $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Admin xác nhận thủ công một đơn (thường là COD) đã được thu tiền.
+    public function markPaid(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("UPDATE DON_HANG SET DH_TT_TRANGTHAI = 'paid' WHERE DH_MA = :id");
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Khách tự báo "đã chuyển khoản" cho thanh toán QR thủ công (MoMo cá nhân, chuyển khoản).
+    // Chỉ chuyển từ 'unpaid', không đè lên 'paid' nếu admin đã xác nhận trước đó.
+    public function markWaitingConfirmation(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE DON_HANG SET DH_TT_TRANGTHAI = 'waiting_confirmation'
+            WHERE DH_MA = :id AND DH_TT_TRANGTHAI = 'unpaid'
+        ");
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }

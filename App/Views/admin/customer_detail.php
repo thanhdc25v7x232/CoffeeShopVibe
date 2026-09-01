@@ -18,13 +18,40 @@ $statusLabels = [
         </a>
     </div>
 
+    <?php if (!empty($messages['success'])): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($messages['success']) ?></div>
+    <?php endif; ?>
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars(is_array($errors) ? implode(' ', $errors) : $errors) ?></div>
+    <?php endif; ?>
+
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <strong>Thông tin tài khoản #<?= (int)$customer['kh_ma'] ?></strong>
+                    <?php $locked = filter_var($customer['kh_khoa'] ?? false, FILTER_VALIDATE_BOOLEAN); ?>
+                    <form method="POST" action="/admin/customer-toggle-lock"
+                          onsubmit="return confirm('<?= $locked ? 'Mở khóa tài khoản này?' : 'Khóa tài khoản này? Khách sẽ không đăng nhập được nữa.' ?>');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="customer_id" value="<?= (int)$customer['kh_ma'] ?>">
+                        <input type="hidden" name="locked" value="<?= $locked ? '0' : '1' ?>">
+                        <button type="submit" class="btn btn-sm <?= $locked ? 'btn-light' : 'btn-outline-light' ?>">
+                            <?php if ($locked): ?>
+                                <i class="fa-solid fa-lock-open"></i> Mở khóa
+                            <?php else: ?>
+                                <i class="fa-solid fa-lock"></i> Khóa tài khoản
+                            <?php endif; ?>
+                        </button>
+                    </form>
                 </div>
                 <div class="card-body">
+                    <?php if ($locked): ?>
+                        <div class="alert alert-warning py-2 px-3 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Tài khoản đang bị khóa — khách hàng không thể đăng nhập.
+                        </div>
+                    <?php endif; ?>
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Họ và tên</dt>
                         <dd class="col-sm-8"><?= htmlspecialchars($customer['kh_ten'], ENT_QUOTES, 'UTF-8') ?></dd>

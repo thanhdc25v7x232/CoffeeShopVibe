@@ -19,6 +19,64 @@
                     <p class="mb-0"><strong>Ngày đặt:</strong> <?= date('d/m/Y H:i', strtotime($order['dh_ngaytao'])) ?></p>
                 </div>
             </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white">Thanh toán</div>
+                <div class="card-body">
+                    <p>
+                        <strong>Phương thức:</strong>
+                        <?= htmlspecialchars($paymentMethodLabels[$order['dh_pttt']] ?? $order['dh_pttt'] ?? 'COD') ?>
+                    </p>
+                    <p class="mb-3">
+                        <strong>Trạng thái:</strong>
+                        <?php $paymentStatus = $order['dh_tt_trangthai'] ?? 'unpaid'; ?>
+                        <?php if ($paymentStatus === 'paid'): ?>
+                            <span class="badge bg-success">Đã thanh toán</span>
+                        <?php elseif ($paymentStatus === 'waiting_confirmation'): ?>
+                            <span class="badge bg-info text-dark">Chờ xác nhận (khách báo đã chuyển)</span>
+                        <?php else: ?>
+                            <span class="badge bg-warning text-dark">Chưa thanh toán</span>
+                        <?php endif; ?>
+                    </p>
+
+                    <?php if (($order['dh_tt_trangthai'] ?? 'unpaid') !== 'paid'): ?>
+                        <form method="POST" action="/admin/mark-order-paid" onsubmit="return confirm('Xác nhận đơn hàng này đã được thanh toán?');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="order_id" value="<?= (int)$order['dh_ma'] ?>">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fa-solid fa-check"></i> Xác nhận đã thanh toán
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <?php if (!empty($transactions)): ?>
+                        <hr>
+                        <p class="mb-2 text-muted small">Lịch sử giao dịch với cổng thanh toán:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Cổng</th>
+                                        <th>Số tiền</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thời gian</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($transactions as $t): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($t['gd_nhacc']) ?></td>
+                                            <td><?= number_format($t['gd_sotien'], 0, ',', '.') ?>đ</td>
+                                            <td><?= htmlspecialchars($t['gd_trangthai']) ?></td>
+                                            <td><?= date('d/m/Y H:i', strtotime($t['gd_ngaytao'])) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
 
         <div class="col-md-7">

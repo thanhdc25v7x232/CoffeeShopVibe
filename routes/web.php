@@ -57,6 +57,7 @@ $router->get('/cart/count', '\App\Controllers\CartController@count');
 $router->get('/checkout', '\App\Controllers\OrderController@checkout');
 $router->post('/dat-hang', '\App\Controllers\OrderController@store');
 $router->get('/dat-hang/thanh-cong', '\App\Controllers\OrderController@success');
+$router->post('/dat-hang/xac-nhan-da-chuyen', '\App\Controllers\OrderController@confirmManualPayment');
 
 // Admin đăng nhập
 $router->get('/admin/login', '\App\Controllers\Auth\LoginController@index');
@@ -73,7 +74,26 @@ $router->post('/admin/update-order-status', '\App\Controllers\AdminController@up
 $router->get('/admin/statistics', '\App\Controllers\AdminController@statistics');
 $router->get('/admin/customers', '\App\Controllers\AdminController@customers');
 $router->get('/admin/customer-detail', '\App\Controllers\AdminController@customerDetail');
+$router->post('/admin/customer-toggle-lock', '\App\Controllers\AdminController@toggleCustomerLock');
 $router->get('/admin/orders/new-check', '\App\Controllers\AdminController@ordersNewCheck');
+$router->post('/admin/mark-order-paid', '\App\Controllers\AdminController@markOrderPaid');
+
+// Admin: quản lý tài khoản admin
+$router->get('/admin/admins', '\App\Controllers\AdminController@admins');
+$router->post('/admin/admins/delete', '\App\Controllers\AdminController@deleteAdmin');
+
+// Admin: theo dõi trợ lý AI
+$router->get('/admin/ai-conversations', '\App\Controllers\AdminController@aiConversations');
+$router->get('/admin/ai-conversations/detail', '\App\Controllers\AdminController@aiConversationDetail');
+
+// Admin: cài đặt chung
+$router->get('/admin/settings', '\App\Controllers\AdminController@settings');
+$router->post('/admin/settings/save', '\App\Controllers\AdminController@saveSettings');
+
+// Admin: quản lý danh mục sản phẩm
+$router->get('/admin/categories', '\App\Controllers\ProductController@categories');
+$router->post('/admin/categories/save', '\App\Controllers\ProductController@saveCategory');
+$router->post('/admin/categories/delete', '\App\Controllers\ProductController@deleteCategory');
 
 // Quản lý sản phẩm
 $router->get('/admin/products/create', '\App\Controllers\ProductController@create');
@@ -119,3 +139,7 @@ $router->post('/admin/inventory/update-stock', '\App\Controllers\AdminController
 $router->get('/admin/chat', '\App\Controllers\AdminChatController@index');
 $router->get('/admin/chat/conversation', '\App\Controllers\AdminChatController@conversation');
 $router->post('/admin/chat/send', '\App\Controllers\AdminChatController@send');
+
+// Trợ lý AI (RAG) — không yêu cầu đăng nhập
+$router->get('/ai/messages', '\App\Controllers\AiAssistantController@history');
+$router->post('/ai/chat', '\App\Controllers\AiAssistantController@send');

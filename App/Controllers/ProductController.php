@@ -309,6 +309,62 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Trang quản lý danh mục sản phẩm (loại sản phẩm).
+     */
+    public function categories()
+    {
+        $this->requireAdmin();
+
+        $this->view('admin/categories', [
+            'title' => 'Quản lý danh mục - ' . APPNAME,
+            'categories' => $this->productModel->getCategoriesWithProductCount(),
+            'errors' => session_get_once('errors', []),
+            'messages' => session_get_once('messages', []),
+        ]);
+    }
+
+    // Dùng chung cho cả thêm và sửa danh mục
+    public function saveCategory()
+    {
+        $this->requireAdmin();
+
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $categoryId = isset($_POST['category_id']) && $_POST['category_id'] !== '' ? (int)$_POST['category_id'] : null;
+
+        if ($name === '') {
+            redirect('/admin/categories', ['errors' => ['name' => 'Tên danh mục không được để trống.']]);
+        }
+
+        if ($categoryId) {
+            $this->productModel->updateCategory($categoryId, $name);
+            redirect('/admin/categories', ['messages' => ['success' => 'Đã cập nhật danh mục.']]);
+        }
+
+        $this->productModel->addCategory($name);
+        redirect('/admin/categories', ['messages' => ['success' => 'Đã thêm danh mục mới.']]);
+    }
+
+    public function deleteCategory()
+    {
+        $this->requireAdmin();
+
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $categoryId = isset($_POST['category_id']) ? (int)$_POST['category_id'] : 0;
+        if ($categoryId > 0) {
+            $this->productModel->deleteCategory($categoryId);
+        }
+
+        redirect('/admin/categories', ['messages' => ['success' => 'Đã xóa danh mục. Sản phẩm thuộc danh mục này chuyển về "chưa phân loại".']]);
+    }
+
     private function requireAdmin()
     {
         if (!AUTHGUARD()->isAdminLoggedIn()) {

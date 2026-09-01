@@ -39,6 +39,38 @@ class Product
         return $stmt->fetchAll();
     }
 
+    // Danh sách loại sản phẩm kèm số sản phẩm đang thuộc mỗi loại (trang quản lý danh mục).
+    public function getCategoriesWithProductCount(): array
+    {
+        $stmt = $this->pdo->query("
+            SELECT l.L_MA, l.L_TEN, l.L_NGAYTAO, COUNT(p.SP_MA) AS product_count
+            FROM LOAI_SAN_PHAM l
+            LEFT JOIN SAN_PHAM p ON p.L_MA = l.L_MA
+            GROUP BY l.L_MA, l.L_TEN, l.L_NGAYTAO
+            ORDER BY l.L_MA ASC
+        ");
+        return $stmt->fetchAll();
+    }
+
+    public function addCategory(string $name): bool
+    {
+        $stmt = $this->pdo->prepare("INSERT INTO LOAI_SAN_PHAM (L_TEN) VALUES (:ten)");
+        return $stmt->execute(['ten' => $name]);
+    }
+
+    public function updateCategory(int $id, string $name): bool
+    {
+        $stmt = $this->pdo->prepare("UPDATE LOAI_SAN_PHAM SET L_TEN = :ten WHERE L_MA = :id");
+        return $stmt->execute(['ten' => $name, 'id' => $id]);
+    }
+
+    // Sản phẩm thuộc loại bị xóa sẽ tự chuyển L_MA về NULL (ON DELETE SET NULL), không bị xóa theo.
+    public function deleteCategory(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM LOAI_SAN_PHAM WHERE L_MA = :id");
+        return $stmt->execute(['id' => $id]);
+    }
+
     // 3. Thêm sản phẩm mới (Đã cập nhật thêm cột L_MA, KM_MA)
     public function addProduct($data)
     {
@@ -346,5 +378,55 @@ class Product
             $row['low_stock'] = (int)$row['sp_tonkho'] <= $lowStockThreshold;
             return $row;
         }, $rows);
+    }
+
+    /**
+     * Tìm sản phẩm liên quan nhất đến một câu hỏi tự do (dùng cho trợ lý AI - RAG).
+     * Khớp từ khóa (không dấu) trên tên/mô tả/loại sản phẩm, không cần pgvector.
+     * Nếu không khớp từ khóa nào, trả về các sản phẩm mới nhất để AI vẫn có dữ liệu tham khảo.
+     */
+    public function searchForAssistant(string $question, int $limit = 6): array
+    {
+        $tokens = array_filter(
+            explode(' ', normalize_text($question)),
+            fn($t) => mb_strlen($t) >= 2
+        );
+
+        $stmt = $this->pdo->prepare("
+            SELECT p.SP_MA, p.SP_TEN, p.SP_GIA, p.SP_MOTA, p.SP_TONKHO, l.L_TEN, km.KM_PHANTRAM
+            FROM SAN_PHAM p
+            LEFT JOIN LOAI_SAN_PHAM l ON p.L_MA = l.L_MA
+            " . self::ACTIVE_PROMOTION_JOIN . "
+            ORDER BY p.SP_NGAYTAO DESC
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        if (empty($tokens)) {
+            return array_map([$this, 'withEffectivePrice'], array_slice($rows, 0, $limit));
+        }
+
+        $scored = [];
+        foreach ($rows as $row) {
+            $haystack = normalize_text(($row['sp_ten'] ?? '') . ' ' . ($row['sp_mota'] ?? '') . ' ' . ($row['l_ten'] ?? ''));
+            $score = 0;
+            foreach ($tokens as $token) {
+                if (str_contains($haystack, $token)) {
+                    $score++;
+                }
+            }
+            if ($score > 0) {
+                $scored[] = ['score' => $score, 'row' => $row];
+            }
+        }
+
+        if (empty($scored)) {
+            return array_map([$this, 'withEffectivePrice'], array_slice($rows, 0, $limit));
+        }
+
+        usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+        $top = array_slice(array_column($scored, 'row'), 0, $limit);
+
+        return array_map([$this, 'withEffectivePrice'], $top);
     }
 }

@@ -3,10 +3,14 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Models\Admin;
+use App\Models\AiConversation;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\PDOFactory;
+use App\Models\Setting;
 
 class AdminController extends Controller
 {
@@ -14,6 +18,10 @@ class AdminController extends Controller
     protected $orderModel;
     protected $customerModel;
     protected $productModel;
+    protected $adminModel;
+    protected $paymentTransactionModel;
+    protected $aiConversationModel;
+    protected $settingModel;
 
     public function __construct()
     {
@@ -35,6 +43,10 @@ class AdminController extends Controller
         $this->orderModel = new Order($this->pdo);
         $this->customerModel = new Customer($this->pdo);
         $this->productModel = new Product($this->pdo);
+        $this->adminModel = new Admin($this->pdo);
+        $this->paymentTransactionModel = new PaymentTransaction($this->pdo);
+        $this->aiConversationModel = new AiConversation($this->pdo);
+        $this->settingModel = new Setting($this->pdo);
 
         $this->setLayout('layouts/admin_master');
     }
@@ -111,6 +123,8 @@ class AdminController extends Controller
             'title' => 'Chi Tiết Đơn Hàng - ' . APPNAME,
             'order' => $order,
             'items' => $this->orderModel->getItemsByOrderId((int)$orderId),
+            'transactions' => $this->paymentTransactionModel->findByOrderId((int)$orderId),
+            'paymentMethodLabels' => \App\Services\Payments\PaymentGatewayFactory::labels(),
         ];
 
         $this->view('admin/order_detail', $data);
@@ -135,6 +149,25 @@ class AdminController extends Controller
         $this->orderModel->updateStatus((int)$orderId, $status);
 
         redirect('/admin/orders', ['messages' => ['success' => 'Cập nhật trạng thái đơn hàng thành công!']]);
+    }
+
+    /**
+     * Xác nhận thủ công một đơn hàng (thường là COD) đã được thu tiền.
+     */
+    public function markOrderPaid()
+    {
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $orderId = (int)($_POST['order_id'] ?? 0);
+        if ($orderId <= 0) {
+            redirect('/admin/orders');
+        }
+
+        $this->orderModel->markPaid($orderId);
+
+        redirect('/admin/order-detail?id=' . $orderId, ['messages' => ['success' => 'Đã xác nhận đơn hàng đã thanh toán.']]);
     }
 
     /**
@@ -212,6 +245,31 @@ class AdminController extends Controller
             'title' => 'Chi tiết khách hàng - ' . APPNAME,
             'customer' => $customer,
             'orders' => $this->orderModel->findByCustomer((int)$customerId),
+            'messages' => session_get_once('messages'),
+            'errors' => session_get_once('errors'),
+        ]);
+    }
+
+    /**
+     * Khóa/mở khóa tài khoản khách hàng — khách bị khóa không đăng nhập được nữa.
+     */
+    public function toggleCustomerLock()
+    {
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $customerId = (int)($_POST['customer_id'] ?? 0);
+        $locked = ($_POST['locked'] ?? '') === '1';
+
+        if ($customerId <= 0) {
+            redirect('/admin/customers');
+        }
+
+        $this->customerModel->setLocked($customerId, $locked);
+
+        redirect('/admin/customer-detail?id=' . $customerId, [
+            'messages' => ['success' => $locked ? 'Đã khóa tài khoản khách hàng.' : 'Đã mở khóa tài khoản khách hàng.'],
         ]);
     }
 
@@ -245,5 +303,99 @@ class AdminController extends Controller
 
         $this->productModel->updateStock($productId, (int)$stock);
         redirect('/admin/inventory', ['messages' => ['success' => 'Đã cập nhật tồn kho.']]);
+    }
+
+    /**
+     * Danh sách tài khoản admin.
+     */
+    public function admins()
+    {
+        $this->view('admin/admins', [
+            'title' => 'Quản lý admin - ' . APPNAME,
+            'admins' => $this->adminModel->getAll(),
+            'currentAdminId' => (int)AUTHGUARD()->admin()->qtv_ma,
+            'messages' => session_get_once('messages'),
+            'errors' => session_get_once('errors'),
+        ]);
+    }
+
+    /**
+     * Xóa một tài khoản admin. Không cho tự xóa chính mình và không cho xóa admin cuối cùng,
+     * để tránh khóa luôn lối vào trang quản trị.
+     */
+    public function deleteAdmin()
+    {
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $adminId = (int)($_POST['admin_id'] ?? 0);
+        $currentAdminId = (int)AUTHGUARD()->admin()->qtv_ma;
+
+        if ($adminId === $currentAdminId) {
+            redirect('/admin/admins', ['errors' => ['Không thể tự xóa tài khoản đang đăng nhập.']]);
+        }
+
+        if ($this->adminModel->countAll() <= 1) {
+            redirect('/admin/admins', ['errors' => ['Không thể xóa admin cuối cùng.']]);
+        }
+
+        $this->adminModel->delete($adminId);
+        redirect('/admin/admins', ['messages' => ['success' => 'Đã xóa tài khoản admin.']]);
+    }
+
+    /**
+     * Danh sách phiên hội thoại với trợ lý AI (theo dõi/kiểm tra chất lượng trả lời).
+     */
+    public function aiConversations()
+    {
+        $this->view('admin/ai_conversations', [
+            'title' => 'Trợ lý AI - ' . APPNAME,
+            'sessions' => $this->aiConversationModel->listSessionsForAdmin(),
+        ]);
+    }
+
+    public function aiConversationDetail()
+    {
+        $session = trim($_GET['session'] ?? '');
+        if ($session === '') {
+            redirect('/admin/ai-conversations');
+        }
+
+        $this->view('admin/ai_conversation_detail', [
+            'title' => 'Chi tiết hội thoại AI - ' . APPNAME,
+            'session' => $session,
+            'messages' => $this->aiConversationModel->getHistory($session, 200),
+        ]);
+    }
+
+    /**
+     * Cài đặt chung của site: phí giao hàng, thông báo trang chủ.
+     */
+    public function settings()
+    {
+        $this->view('admin/settings', [
+            'title' => 'Cài đặt chung - ' . APPNAME,
+            'settings' => $this->settingModel->getAll(),
+            'messages' => session_get_once('messages'),
+            'errors' => session_get_once('errors'),
+        ]);
+    }
+
+    public function saveSettings()
+    {
+        if (!validate_csrf_token($_POST['_csrf'] ?? '')) {
+            abort_csrf();
+        }
+
+        $phiGiaoHang = $_POST['phi_giao_hang'] ?? '0';
+        if (!is_numeric($phiGiaoHang) || $phiGiaoHang < 0) {
+            redirect('/admin/settings', ['errors' => ['Phí giao hàng không hợp lệ.']]);
+        }
+
+        $this->settingModel->set('phi_giao_hang', (string)(int)$phiGiaoHang);
+        $this->settingModel->set('thong_bao', trim($_POST['thong_bao'] ?? ''));
+
+        redirect('/admin/settings', ['messages' => ['success' => 'Đã lưu cài đặt.']]);
     }
 }

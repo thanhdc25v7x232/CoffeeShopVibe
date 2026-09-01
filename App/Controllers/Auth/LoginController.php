@@ -54,10 +54,12 @@ class LoginController extends Controller
 
         $errors = [];
         $customer = $this->customerModel->findByEmail($user_credentials['email']);
-        
+
         if (!$customer) {
             // Khách hàng không tồn tại
             $errors['email'] = 'Email hoặc mật khẩu không đúng.';
+        } else if ($customer->kh_khoa) {
+            $errors['email'] = 'Tài khoản này đã bị khóa. Vui lòng liên hệ Vibe để được hỗ trợ.';
         } else if (AUTHGUARD()->login($customer, $user_credentials)) {
             // Đăng nhập thành công
             redirect('/', ['messages' => ['success' => 'Đăng nhập thành công!']]);

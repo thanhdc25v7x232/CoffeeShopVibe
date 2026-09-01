@@ -60,6 +60,28 @@ class Admin
         return null;
     }
 
+    // Danh sách toàn bộ tài khoản admin (trang quản lý admin).
+    public function getAll(): array
+    {
+        $stmt = $this->pdo->query("
+            SELECT QTV_MA as qtv_ma, QTV_TENDN as qtv_tendn, QTV_NGAYTAO as qtv_ngaytao
+            FROM QUAN_TRI_VIEN
+            ORDER BY QTV_MA ASC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countAll(): int
+    {
+        return (int)$this->pdo->query("SELECT COUNT(*) FROM QUAN_TRI_VIEN")->fetchColumn();
+    }
+
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM QUAN_TRI_VIEN WHERE QTV_MA = :id");
+        return $stmt->execute(['id' => $id]);
+    }
+
     // Điền dữ liệu từ database row
     protected function fillFromDbRow(array $row)
     {

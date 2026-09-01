@@ -5,7 +5,21 @@ try {
 } catch (Throwable $e) {
     $menuCategories = [];
 }
+
+$siteAnnouncement = '';
+try {
+    $siteAnnouncement = trim((new \App\Models\Setting(PDO()))->get('thong_bao', ''));
+} catch (Throwable $e) {
+    $siteAnnouncement = '';
+}
 ?>
+
+<?php if ($siteAnnouncement !== ''): ?>
+    <div class="text-center text-white py-2 px-3 small" style="background-color: #B12A82;">
+        <i class="fa-solid fa-bullhorn me-1"></i>
+        <?= htmlspecialchars($siteAnnouncement) ?>
+    </div>
+<?php endif; ?>
 
 <header class="text-center text-light" style="margin:0; padding:0; position: relative; z-index: 1000;">
 

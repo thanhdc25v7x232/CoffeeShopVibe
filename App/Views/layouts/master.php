@@ -21,7 +21,7 @@
 
     <?php if (AUTHGUARD()->isCustomerLoggedIn()): ?>
         <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
-            <div id="chat-panel" class="card shadow" style="display:none; flex-direction: column; width: 320px; height: 420px; position: absolute; bottom: 66px; right: 0;">
+            <div id="chat-panel" class="card shadow" style="display:none; flex-direction: column; width: min(320px, calc(100vw - 32px)); height: min(420px, calc(100vh - 140px)); position: fixed; bottom: 86px; right: 16px;">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-2">
                     <span><i class="fa-solid fa-headset me-2"></i>Hỗ trợ khách hàng</span>
                     <button type="button" class="btn-close btn-close-white btn-sm" id="chat-close" aria-label="Đóng"></button>
@@ -48,8 +48,127 @@
         </a>
     <?php endif; ?>
 
+    <!-- Trợ lý AI: luôn hiển thị, không cần đăng nhập (chỉ tư vấn thông tin công khai) -->
+    <div style="position: fixed; bottom: 20px; right: 90px; z-index: 1050;">
+        <div id="ai-panel" class="card shadow" style="display:none; flex-direction: column; width: min(320px, calc(100vw - 32px)); height: min(420px, calc(100vh - 140px)); position: fixed; bottom: 86px; right: 16px;">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                <span><i class="fa-solid fa-robot me-2"></i>Trợ lý AI Vibe</span>
+                <button type="button" class="btn-close btn-close-white btn-sm" id="ai-close" aria-label="Đóng"></button>
+            </div>
+            <div id="ai-messages" class="p-2" style="flex: 1; overflow-y: auto;"></div>
+            <div class="card-footer p-2">
+                <form id="ai-form" class="d-flex gap-1">
+                    <input type="text" id="ai-input" class="form-control form-control-sm" placeholder="Hỏi về menu, giá, khuyến mãi..." autocomplete="off">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <button type="button" id="ai-toggle" class="btn btn-primary rounded-circle shadow" style="width:56px;height:56px;" title="Hỏi trợ lý AI">
+            <i class="fa-solid fa-robot fa-lg"></i>
+        </button>
+    </div>
+
     <script>
         const CSRF_TOKEN = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>';
+    </script>
+
+    <script>
+    (function () {
+        var toggle = document.getElementById('ai-toggle');
+        var panel = document.getElementById('ai-panel');
+        var closeBtn = document.getElementById('ai-close');
+        var form = document.getElementById('ai-form');
+        var input = document.getElementById('ai-input');
+        var box = document.getElementById('ai-messages');
+        var isPanelOpen = false;
+        var historyLoaded = false;
+
+        function appendMessage(role, text) {
+            var row = document.createElement('div');
+            row.className = 'mb-2 d-flex ' + (role === 'user' ? 'justify-content-end' : 'justify-content-start');
+            var bubble = document.createElement('div');
+            bubble.className = 'px-2 py-1 rounded small ' + (role === 'user' ? 'bg-primary text-white' : 'bg-light border');
+            bubble.style.maxWidth = '80%';
+            bubble.style.wordBreak = 'break-word';
+            bubble.textContent = text;
+            row.appendChild(bubble);
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+            return row;
+        }
+
+        function loadHistory() {
+            fetch('/ai/messages', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    box.innerHTML = '';
+                    if (data.success && data.messages.length) {
+                        data.messages.forEach(function (m) { appendMessage(m.role, m.content); });
+                    } else {
+                        appendMessage('assistant', 'Chào bạn! Mình là trợ lý AI của Vibe, bạn cần hỏi gì về menu, giá hay khuyến mãi không?');
+                    }
+                })
+                .catch(function () { /* bỏ qua lỗi mạng tạm thời */ });
+        }
+
+        toggle.addEventListener('click', function () {
+            isPanelOpen = panel.style.display !== 'flex';
+            if (isPanelOpen) {
+                // Cả 2 khung (chat & AI) neo cùng 1 vị trí trên mobile để không tràn màn hình,
+                // nên chỉ mở 1 khung tại 1 thời điểm để tránh chồng lên nhau.
+                var chatPanel = document.getElementById('chat-panel');
+                if (chatPanel) chatPanel.style.display = 'none';
+                panel.style.display = 'flex';
+                if (!historyLoaded) {
+                    historyLoaded = true;
+                    loadHistory();
+                }
+            } else {
+                panel.style.display = 'none';
+            }
+        });
+
+        closeBtn.addEventListener('click', function () {
+            isPanelOpen = false;
+            panel.style.display = 'none';
+        });
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            input.disabled = true;
+
+            appendMessage('user', text);
+            var typingRow = appendMessage('assistant', 'Đang trả lời...');
+
+            var body = new URLSearchParams();
+            body.set('_csrf', typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '');
+            body.set('noi_dung', text);
+
+            fetch('/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: body.toString()
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                typingRow.remove();
+                appendMessage('assistant', data.success ? data.reply : (data.message || 'Có lỗi xảy ra, bạn thử lại nhé.'));
+            })
+            .catch(function () {
+                typingRow.remove();
+                appendMessage('assistant', 'Không thể kết nối tới trợ lý AI, bạn thử lại sau nhé.');
+            })
+            .finally(function () {
+                input.disabled = false;
+                input.focus();
+            });
+        });
+    })();
     </script>
 
     <?php if (AUTHGUARD()->isCustomerLoggedIn()): ?>
@@ -131,6 +250,9 @@
         toggle.addEventListener('click', function () {
             isPanelOpen = panel.style.display !== 'flex';
             if (isPanelOpen) {
+                // Xem ghi chú tương tự ở khung AI: 2 khung neo cùng vị trí trên mobile.
+                var aiPanel = document.getElementById('ai-panel');
+                if (aiPanel) aiPanel.style.display = 'none';
                 panel.style.display = 'flex';
                 unreadDot.style.display = 'none';
                 loadHistory();

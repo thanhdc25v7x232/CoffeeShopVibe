@@ -14,6 +14,7 @@ class Customer
     public $kh_sdt;
     public $kh_diachi;
     public $kh_matkhau;
+    public $kh_khoa = false;
 
     public function __construct(PDO $pdo)
     {
@@ -25,9 +26,9 @@ class Customer
     {
         // PostgreSQL trả về tên cột chữ thường, nên dùng alias hoặc truy cập bằng cả hai cách
         $stmt = $this->pdo->prepare("
-            SELECT KH_MA as kh_ma, KH_TEN as kh_ten, KH_EMAIL as kh_email, 
-                   KH_SDT as kh_sdt, KH_DIACHI as kh_diachi, KH_MATKHAU as kh_matkhau
-            FROM KHACH_HANG 
+            SELECT KH_MA as kh_ma, KH_TEN as kh_ten, KH_EMAIL as kh_email,
+                   KH_SDT as kh_sdt, KH_DIACHI as kh_diachi, KH_MATKHAU as kh_matkhau, KH_KHOA as kh_khoa
+            FROM KHACH_HANG
             WHERE KH_EMAIL = :email
         ");
         $stmt->execute(['email' => $email]);
@@ -47,9 +48,9 @@ class Customer
     {
         // PostgreSQL trả về tên cột chữ thường, nên dùng alias
         $stmt = $this->pdo->prepare("
-            SELECT KH_MA as kh_ma, KH_TEN as kh_ten, KH_EMAIL as kh_email, 
-                   KH_SDT as kh_sdt, KH_DIACHI as kh_diachi, KH_MATKHAU as kh_matkhau
-            FROM KHACH_HANG 
+            SELECT KH_MA as kh_ma, KH_TEN as kh_ten, KH_EMAIL as kh_email,
+                   KH_SDT as kh_sdt, KH_DIACHI as kh_diachi, KH_MATKHAU as kh_matkhau, KH_KHOA as kh_khoa
+            FROM KHACH_HANG
             WHERE KH_MA = :id
         ");
         $stmt->execute(['id' => $id]);
@@ -155,6 +156,7 @@ class Customer
                 k.KH_SDT AS kh_sdt,
                 k.KH_DIACHI AS kh_diachi,
                 k.KH_NGAYTAO AS kh_ngaytao,
+                k.KH_KHOA AS kh_khoa,
                 COUNT(d.DH_MA) AS total_orders,
                 COALESCE(SUM(
                     CASE WHEN d.DH_TRANGTHAI != 'cancelled' THEN d.DH_TONGTIEN ELSE 0 END
@@ -162,13 +164,21 @@ class Customer
             FROM KHACH_HANG k
             LEFT JOIN DON_HANG d ON d.KH_MA = k.KH_MA
             WHERE k.KH_MA = :id
-            GROUP BY k.KH_MA, k.KH_TEN, k.KH_EMAIL, k.KH_SDT, k.KH_DIACHI, k.KH_NGAYTAO
+            GROUP BY k.KH_MA, k.KH_TEN, k.KH_EMAIL, k.KH_SDT, k.KH_DIACHI, k.KH_NGAYTAO, k.KH_KHOA
         ");
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $row ?: null;
+    }
+
+    public function setLocked(int $id, bool $locked): bool
+    {
+        $stmt = $this->pdo->prepare("UPDATE KHACH_HANG SET KH_KHOA = :khoa WHERE KH_MA = :id");
+        $stmt->bindValue(':khoa', $locked, PDO::PARAM_BOOL);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
 
     // Lưu khách hàng (thêm mới hoặc cập nhật)
@@ -237,6 +247,7 @@ class Customer
         $this->kh_sdt = $row['kh_sdt'] ?? '';
         $this->kh_diachi = $row['kh_diachi'] ?? '';
         $this->kh_matkhau = $row['kh_matkhau'] ?? '';
+        $this->kh_khoa = filter_var($row['kh_khoa'] ?? false, FILTER_VALIDATE_BOOLEAN);
     }
 
     // Kiểm tra email đã tồn tại chưa

@@ -105,6 +105,111 @@
                 </div>
             </div>
         </div>
+
+        <!-- Card Quản Lý Danh Mục -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-layer-group fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Danh Mục Sản Phẩm</h5>
+                    <p class="card-text text-muted">Thêm, sửa, xóa danh mục sản phẩm</p>
+                    <a href="/admin/categories" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Quản Lý Đánh Giá -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-star fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Quản Lý Đánh Giá</h5>
+                    <p class="card-text text-muted">Duyệt, ẩn đánh giá sản phẩm của khách</p>
+                    <a href="/admin/reviews" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Tồn Kho -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-boxes-stacked fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Tồn Kho</h5>
+                    <p class="card-text text-muted">Báo cáo và cập nhật nhanh tồn kho</p>
+                    <a href="/admin/inventory" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Chat -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-comments fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Chat Với Khách</h5>
+                    <p class="card-text text-muted">Trả lời tin nhắn hỗ trợ khách hàng</p>
+                    <a href="/admin/chat" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Trợ Lý AI -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-robot fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Trợ Lý AI</h5>
+                    <p class="card-text text-muted">Theo dõi lịch sử hội thoại trợ lý AI</p>
+                    <a href="/admin/ai-conversations" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Tài Khoản Admin -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-user-shield fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Tài Khoản Admin</h5>
+                    <p class="card-text text-muted">Quản lý tài khoản quản trị viên</p>
+                    <a href="/admin/admins" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Cài Đặt -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-gear fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Cài Đặt Chung</h5>
+                    <p class="card-text text-muted">Phí giao hàng, thông báo trang chủ</p>
+                    <a href="/admin/settings" class="btn btn-success">
+                        <i class="fa-solid fa-arrow-right me-1"></i>
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row mt-5">

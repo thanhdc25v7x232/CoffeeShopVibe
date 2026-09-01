@@ -12,11 +12,6 @@ class AdminRegisterController extends Controller
 
     public function __construct()
     {
-        // Kiểm tra nếu đã đăng nhập admin thì redirect
-        if (AUTHGUARD()->isAdminLoggedIn()) {
-            redirect('/admin');
-        }
-
         // Khởi tạo kết nối DB
         $config = [
             'db_host' => $_ENV['DB_HOST'] ?? 'localhost',
@@ -27,7 +22,14 @@ class AdminRegisterController extends Controller
         ];
         $pdo = (new PDOFactory())->create($config);
         $this->adminModel = new Admin($pdo);
-        
+
+        // Trang này chỉ mở công khai để tạo admin ĐẦU TIÊN lúc cài đặt (chưa có admin nào
+        // trong DB). Sau đó, chỉ admin đang đăng nhập mới được tạo thêm admin khác — tránh
+        // để bất kỳ ai cũng tự đăng ký được tài khoản quản trị.
+        if (!AUTHGUARD()->isAdminLoggedIn() && $this->adminModel->countAll() > 0) {
+            redirect('/admin/login');
+        }
+
         $this->setLayout('layouts/admin_master');
     }
 
@@ -75,8 +77,11 @@ class AdminRegisterController extends Controller
         if (empty($model_errors)) {
             $newAdmin->fill($data)->save();
 
-            $messages = ['success' => 'Đăng ký thành công! Vui lòng đăng nhập.'];
-            redirect('/admin/login', ['messages' => $messages]);
+            if (AUTHGUARD()->isAdminLoggedIn()) {
+                redirect('/admin/admins', ['messages' => ['success' => 'Đã tạo tài khoản admin mới.']]);
+            }
+
+            redirect('/admin/login', ['messages' => ['success' => 'Đăng ký thành công! Vui lòng đăng nhập.']]);
         }
 
         // Dữ liệu không hợp lệ...
